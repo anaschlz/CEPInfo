@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.inputmask/5.0.6/jquery.inputmask.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Busca de Endereço</title>
+    <style>
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            border-radius: 5px;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        
+        h1 {
+            color: #333;
+        }
+        
+        form {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        
+        input {
+            padding: 8px;
+            margin-bottom: 10px;
+        }
+        
+        button {
+            padding: 10px;
+            background-color: #007BFF;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+        }
+        
+        button:hover {
+            background-color: #0056b3;
+        }
+        
+        #resultado {
+            margin-top: 20px;
+        }
+        
+        p {
+            margin: 0;
+        }
+        
+        strong {
+            color: #007BFF;
+        }
+        
+            </style>
+</head>
+<body>
+    <h1>Busca de Endereço</h1>
+    
+    <form id="buscaForm">
+        <label for="cepOuLogradouro">CEP ou Logradouro:</label>
+        <input type="text" id="cepOuLogradouro" name="cepOuLogradouro" required>
+        <button type="button" onclick="buscarEndereco()">Buscar</button>
+    </form>
+
+    <div id="resultado"></div>
+
+    <script>
+    $(document).ready(function () {
+        $('#cepOuLogradouro').inputmask('99999-999');
+    });
+
+    function buscarEndereco() {
+        var cepOuLogradouro = document.getElementById('cepOuLogradouro').value;
+        var cepSemMascara = cepOuLogradouro.replace(/[^0-9]/g, '');
+
+        fetch(`/buscar_endereco?cep_ou_logradouro=${cepSemMascara}`)
+            .then(response => response.json())
+            .then(data => {
+                var resultadoDiv = document.getElementById('resultado');
+                resultadoDiv.innerHTML = `<p><strong>Resultado:</strong> ${data.resultado}</p>
+                                          <p><strong>Status Code:</strong> ${data.status_code}</p>`;
+            })
+            .catch(error => console.error('Erro ao buscar endereço:', error));
+    }
+</script>
+</body>
+</html>
