@@ -8,22 +8,7 @@
     <title>Busca de Endereço</title>
     <style>
         
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f4f4f4;
-            margin: 0;
-            padding: 0;
-        }
-        
-        .container {
-            max-width: 800px;
-            margin: 20px auto;
-            background-color: #fff;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            padding: 20px;
-            border-radius: 5px;
-        }
-        
+      
         body {
             font-family: Arial, sans-serif;
             margin: 20px;
@@ -70,22 +55,31 @@
         strong {
             color: #007BFF;
         }
+
+        table {
+    border-collapse: separate;
+    border-spacing: 0 10px; 
+        }
         
-            </style>
+        th, td {
+    padding: 10px; 
+        }
+        </style>
 </head>
 <body>
     <h1>Busca de Endereço</h1>
     
     <form id="buscaForm">
-        <label for="cepOuLogradouro">CEP ou Logradouro:</label>
+        <label for="cepOuLogradouro">CEP:</label>
         <input type="text" id="cepOuLogradouro" name="cepOuLogradouro" required>
         <button type="button" onclick="buscarEndereco()">Buscar</button>
     </form>
 
     <div id="resultado"></div>
 
+
     <script>
-    $(document).ready(function () {
+        $(document).ready(function () {
         $('#cepOuLogradouro').inputmask('99999-999');
     });
 
@@ -97,11 +91,34 @@
             .then(response => response.json())
             .then(data => {
                 var resultadoDiv = document.getElementById('resultado');
-                resultadoDiv.innerHTML = `<p><strong>Resultado:</strong> ${data.resultado}</p>
-                                          <p><strong>Status Code:</strong> ${data.status_code}</p>`;
+
+                
+                if (data && data.status_code === 200 && data.resultado && data.resultado.includes('CEP inexistente')) {
+                    resultadoDiv.innerHTML = `<p><strong>Resultado:</strong> CEP não existe.</p>`;
+                } else {
+                    
+                    resultadoDiv.innerHTML = `<table cellspacing="10">
+                                                <tr>
+                                                    <th>ID</th>
+                                                    <th>Endereço</th>
+                                                    <th>Bairro</th>
+                                                    <th>Cidade</th>
+                                                    <th>UF</th>
+                                                    <th>CEP</th>
+                                                </tr>
+                                                <tr>
+                                                    <td>1</td>
+                                                    <td>${data.endereco}</td>
+                                                    <td>${data.bairro}</td>
+                                                    <td>${data.localidade}</td>
+                                                    <td>${data.uf}</td>
+                                                    <td>${data.cep}</td>
+                                                </tr>
+                                              </table>`;
+                }
             })
             .catch(error => console.error('Erro ao buscar endereço:', error));
     }
-</script>
+    </script>
 </body>
 </html>

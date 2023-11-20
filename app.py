@@ -2,9 +2,38 @@ from flask import Flask, render_template, request, jsonify
 import requests
 import re
 
-app = Flask(__name__)
-
 class BuscadorCEP:
+    def __init__(self):
+        self.app = Flask(__name__)
+
+        @self.app.route('/')
+        def index():
+            return render_template('index.html')
+
+        @self.app.route('/buscar_endereco', methods=['GET'])
+        def buscar_endereco():
+            cep_ou_logradouro = request.args.get('cep_ou_logradouro')
+
+            if len(cep_ou_logradouro) == 8 and cep_ou_logradouro.isdigit():
+                resultado, status_code = self.buscar_endereco_por_cep(cep_ou_logradouro)
+            else:
+                resultado, status_code = self.buscar_endereco_por_logradouro(cep_ou_logradouro)
+
+            if isinstance(resultado, dict):
+                resultado_formatado = {
+                    "endereco": resultado['endereco'],
+                    "bairro": resultado['bairro'],
+                    "localidade": resultado['localidade'],
+                    "uf": resultado['uf'],
+                    "cep": resultado['cep'],
+                }
+            else:
+                resultado_formatado = {"endereco": resultado, "bairro": "", "localidade": "", "uf": "", "cep": ""}
+
+            resultado_formatado["status_code"] = status_code
+
+            return jsonify(resultado_formatado)
+
     @staticmethod
     def formatar_cep(cep):
         return f"{cep[:5]}-{cep[5:]}"
@@ -20,11 +49,17 @@ class BuscadorCEP:
         if response.status_code == 200:
             data = response.json()
             if 'erro' in data:
-                return "CEP inexistente.", 200
-            endereco = f"{data['logradouro']} - {data['bairro']}, {data['localidade']} - {data['uf']}, {BuscadorCEP.formatar_cep(data['cep'])}"
+                return {"endereco": "CEP inexistente.", "status_code": 200}
+            endereco = {
+                "endereco": f"{data['logradouro']}",
+                "bairro": data['bairro'],
+                "localidade": data['localidade'],
+                "uf": data['uf'],
+                "cep": BuscadorCEP.formatar_cep(data['cep'])
+            }
             return endereco, 200
         else:
-            return "CEP não encontrado.", response.status_code
+            return {"endereco": "CEP não encontrado.", "status_code": response.status_code}
 
     @staticmethod
     def buscar_endereco_por_cep(cep):
@@ -39,22 +74,9 @@ class BuscadorCEP:
         url = f'https://viacep.com.br/ws/{logradouro}/json/'
         return BuscadorCEP.buscar_endereco(url)
 
-@app.route('/')
-def index():
-    return render_template('index.html')
-
-@app.route('/buscar_endereco', methods=['GET'])
-def buscar_endereco():
-    cep_ou_logradouro = request.args.get('cep_ou_logradouro')
-
-    if len(cep_ou_logradouro) == 8 and cep_ou_logradouro.isdigit():
-        resultado, status_code = BuscadorCEP.buscar_endereco_por_cep(cep_ou_logradouro)
-    else:
-        resultado, status_code = BuscadorCEP.buscar_endereco_por_logradouro(cep_ou_logradouro)
-        
-    resultado = re.sub(r'(\d{5})-+(\d{3})', r'\1-\2', resultado)
-
-    return jsonify({"resultado": resultado, "status_code": status_code})
+    def run(self):
+        self.app.run(debug=True, host='127.0.0.1', port=8000)
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    buscador_cep = BuscadorCEP()
+    buscador_cep.run()
