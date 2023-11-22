@@ -1,42 +1,32 @@
 from flask import Flask, render_template, request, jsonify
 import requests
-import re
+
+app = Flask(__name__)
 
 class BuscadorCEP:
-    def __init__(self):
-        self.app = Flask(__name__)
+    @staticmethod
+    def formatar_resultado(resultado, status_code):
+        mensagens_erro = {
+            400: "Formato de CEP inválido (deve conter 8 dígitos).",
+            404: "CEP não encontrado.",
+        }
 
-        @self.app.route('/')
-        def index():
-            return render_template('index.html')
+        resultado_formatado = {
+            "endereco": resultado.get('endereco', ""),
+            "bairro": resultado.get('bairro', ""),
+            "localidade": resultado.get('localidade', ""),
+            "uf": resultado.get('uf', ""),
+            "cep": BuscadorCEP.formatar_cep(resultado.get('cep', ""))
+        }
 
-        @self.app.route('/buscar_endereco', methods=['GET'])
-        def buscar_endereco():
-            cep_ou_logradouro = request.args.get('cep_ou_logradouro')
+        resultado_formatado["status_code"] = status_code
+        resultado_formatado["mensagem"] = mensagens_erro.get(status_code, "")
 
-            if len(cep_ou_logradouro) == 8 and cep_ou_logradouro.isdigit():
-                resultado, status_code = self.buscar_endereco_por_cep(cep_ou_logradouro)
-            else:
-                resultado, status_code = self.buscar_endereco_por_logradouro(cep_ou_logradouro)
-
-            if isinstance(resultado, dict):
-                resultado_formatado = {
-                    "endereco": resultado['endereco'],
-                    "bairro": resultado['bairro'],
-                    "localidade": resultado['localidade'],
-                    "uf": resultado['uf'],
-                    "cep": resultado['cep'],
-                }
-            else:
-                resultado_formatado = {"endereco": resultado, "bairro": "", "localidade": "", "uf": "", "cep": ""}
-
-            resultado_formatado["status_code"] = status_code
-
-            return jsonify(resultado_formatado)
+        return resultado_formatado
 
     @staticmethod
     def formatar_cep(cep):
-        return f"{cep[:5]}-{cep[5:]}"
+        return f"{cep[:5]}{cep[5:]}"
 
     @staticmethod
     def validar_cep(cep):
@@ -49,20 +39,20 @@ class BuscadorCEP:
         if response.status_code == 200:
             data = response.json()
             if 'erro' in data:
-                return {"endereco": "CEP inexistente.", "status_code": 200}
+                return {"mensagem": "CEP inexistente."}, 404
             endereco = {
-                "endereco": f"{data['logradouro']}",
-                "bairro": data['bairro'],
-                "localidade": data['localidade'],
-                "uf": data['uf'],
-                "cep": BuscadorCEP.formatar_cep(data['cep'])
+                "endereco": data.get('logradouro', ""),
+                "bairro": data.get('bairro', ""),
+                "localidade": data.get('localidade', ""),
+                "uf": data.get('uf', ""),
+                "cep": BuscadorCEP.formatar_cep(data.get('cep', ""))
             }
             return endereco, 200
         else:
-            return {"endereco": "CEP não encontrado.", "status_code": response.status_code}
+            return {"endereco": "CEP não encontrado."}, response.status_code
 
     @staticmethod
-    def buscar_endereco_por_cep(cep):
+    def buscar_endereco_por_CEP(cep):
         if not BuscadorCEP.validar_cep(cep):
             return "Formato de CEP inválido (deve conter 8 dígitos).", 400
 
@@ -74,9 +64,16 @@ class BuscadorCEP:
         url = f'https://viacep.com.br/ws/{logradouro}/json/'
         return BuscadorCEP.buscar_endereco(url)
 
-    def run(self):
-        self.app.run(debug=True, host='127.0.0.1', port=8000)
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@app.route('/buscar_endereco', methods=['GET'])
+def buscar_endereco():
+    cep_ou_logradouro = request.args.get('cep_ou_logradouro')
+    resultado, status_code = BuscadorCEP.buscar_endereco_por_CEP(cep_ou_logradouro)
+    resultado_formatado = BuscadorCEP.formatar_resultado(resultado, status_code)
+    return jsonify(resultado_formatado), status_code
 
 if __name__ == '__main__':
-    buscador_cep = BuscadorCEP()
-    buscador_cep.run()
+    app.run(debug=True, host='127.0.0.1', port=8000)

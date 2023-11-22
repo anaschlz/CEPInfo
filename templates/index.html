@@ -57,12 +57,12 @@
         }
 
         table {
-    border-collapse: separate;
-    border-spacing: 0 10px; 
+           border-collapse: separate;
+           border-spacing: 0 10px; 
         }
         
         th, td {
-    padding: 10px; 
+           padding: 10px; 
         }
         </style>
 </head>
@@ -77,48 +77,53 @@
 
     <div id="resultado"></div>
 
-
     <script>
         $(document).ready(function () {
-        $('#cepOuLogradouro').inputmask('99999-999');
-    });
-
-    function buscarEndereco() {
-        var cepOuLogradouro = document.getElementById('cepOuLogradouro').value;
-        var cepSemMascara = cepOuLogradouro.replace(/[^0-9]/g, '');
-
-        fetch(`/buscar_endereco?cep_ou_logradouro=${cepSemMascara}`)
-            .then(response => response.json())
-            .then(data => {
+            $('#cepOuLogradouro').inputmask('99999-999');
+        });
+    
+        function buscarEndereco() {
+            var cepOuLogradouro = document.getElementById('cepOuLogradouro').value;
+            var cepSemMascara = cepOuLogradouro.replace(/[^0-9]/g, '');
+    
+            if (cepSemMascara.length !== 8) {
                 var resultadoDiv = document.getElementById('resultado');
-
-                
-                if (data && data.status_code === 200 && data.resultado && data.resultado.includes('CEP inexistente')) {
-                    resultadoDiv.innerHTML = `<p><strong>Resultado:</strong> CEP não existe.</p>`;
-                } else {
-                    
-                    resultadoDiv.innerHTML = `<table cellspacing="10">
-                                                <tr>
-                                                    <th>ID</th>
-                                                    <th>Endereço</th>
-                                                    <th>Bairro</th>
-                                                    <th>Cidade</th>
-                                                    <th>UF</th>
-                                                    <th>CEP</th>
-                                                </tr>
-                                                <tr>
-                                                    <td>1</td>
-                                                    <td>${data.endereco}</td>
-                                                    <td>${data.bairro}</td>
-                                                    <td>${data.localidade}</td>
-                                                    <td>${data.uf}</td>
-                                                    <td>${data.cep}</td>
-                                                </tr>
-                                              </table>`;
-                }
-            })
-            .catch(error => console.error('Erro ao buscar endereço:', error));
-    }
+                resultadoDiv.innerHTML = `<p><strong>Formato inválido:</strong> O CEP deve conter 8 dígitos.</p>`;
+                return;
+            }
+    
+            fetch(`/buscar_endereco?cep_ou_logradouro=${cepSemMascara}`)
+                .then(response => response.json())
+                .then(data => {
+                    var resultadoDiv = document.getElementById('resultado');
+    
+                    resultadoDiv.innerHTML = '';
+    
+                    if (data && data.status_code === 404) {
+                        resultadoDiv.innerHTML += `<p><strong>Resultado:</strong> CEP não encontrado.</p>`;
+                    } else {
+                       
+                        if (data.endereco) {
+                            resultadoDiv.innerHTML += `<p><strong>Endereço:</strong> ${data.endereco}</p>`;
+                        }
+                        if (data.bairro) {
+                            resultadoDiv.innerHTML += `<p><strong>Bairro:</strong> ${data.bairro}</p>`;
+                        }
+                        if (data.localidade) {
+                            resultadoDiv.innerHTML += `<p><strong>Cidade:</strong> ${data.localidade}</p>`;
+                        }
+                        if (data.uf) {
+                            resultadoDiv.innerHTML += `<p><strong>UF:</strong> ${data.uf}</p>`;
+                        }
+                        if (data.cep) {
+                            resultadoDiv.innerHTML += `<p><strong>CEP:</strong> ${data.cep}</p>`;
+                        }
+                    }
+                })
+                .catch(error => console.error('Erro ao buscar endereço:', error));
+        }
     </script>
+    
+    
 </body>
 </html>
