@@ -59,11 +59,6 @@ class BuscadorCEP:
         url = f'https://viacep.com.br/ws/{cep}/json/'
         return BuscadorCEP.buscar_endereco(url)
 
-    @staticmethod
-    def buscar_endereco_por_logradouro(logradouro):
-        url = f'https://viacep.com.br/ws/{logradouro}/json/'
-        return BuscadorCEP.buscar_endereco(url)
-
 @app.route('/')
 def index():
     return render_template('index.html')
